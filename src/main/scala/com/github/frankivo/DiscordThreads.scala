@@ -1,7 +1,7 @@
 package com.github.frankivo
 
+import discord4j.common.util.Snowflake
 import discord4j.core.DiscordClient
-import discord4j.core.`object`.entity.channel.TextChannel
 import discord4j.core.event.domain.message.MessageCreateEvent
 
 object DiscordThreads {
@@ -16,24 +16,33 @@ object DiscordThreads {
 }
 
 class DiscordThreads {
+  var self: Snowflake = _
+
   def connect(): Unit = {
     val gateway = DiscordClient
       .create(DiscordThreads.TOKEN)
       .login()
       .block()
 
-    gateway.on(classOf[MessageCreateEvent])
+    self = gateway.getSelfId
+
+    gateway
+      .on(classOf[MessageCreateEvent])
       .subscribe(e => handle(e))
 
-    gateway.onDisconnect.block
+    gateway
+      .onDisconnect
+      .block()
   }
 
   def handle(event: MessageCreateEvent): Unit = {
+    if (event.getMember.get().getId == self) return
+
     event
       .getMessage
-      .getChannel
-      .block()
-      .asInstanceOf[TextChannel]
+      .getChannel()
+      .block
+
       .createMessage("test!")
       .subscribe()
   }
